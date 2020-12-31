@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -12,9 +13,15 @@ public class Scraper {
 
     private static final String CLASS_ITEM_LIST = "js-navigation-open link-gray-dark";
 
+    private static final String FILE_NAME_REFERENCE = "final-path";
+
+    private static final String FILE_SIZE_REFERENCE = "file-info-divider";
+
     private static final String GITHUB_BASE_URL = "https://github.com";
 
-    public static Map<String, Double> getFilesSize(String url){
+    private Map<String, Double> repositoryInfo = new HashMap<>();
+
+    public Map<String, Double> getFilesSize(String url){
 
         if(!url.contains(GITHUB_BASE_URL)){
             url = GITHUB_BASE_URL + url;
@@ -28,10 +35,10 @@ public class Scraper {
             getFilesSize(e);
         }
 
-        return null;
+        return repositoryInfo;
     }
 
-    private static String getPageContent(String url){
+    private String getPageContent(String url){
         String text = null;
         try {
             InputStream in = new URL(url).openStream();
@@ -45,7 +52,7 @@ public class Scraper {
         return text;
     }
 
-    private static List<String> getItemsUrl(String pageContent){
+    private List<String> getItemsUrl(String pageContent){
         List<String> urls = new ArrayList<>();
         while(pageContent.contains(CLASS_ITEM_LIST)){
             int classIndex = pageContent.indexOf(CLASS_ITEM_LIST);
@@ -57,18 +64,57 @@ public class Scraper {
         }
         
         if(isFile(pageContent)){
-            //TODO: put informations size and extension in map to return
-            System.out.println("TRUE");
+            String extension = getFileExtension(pageContent);
+            Double size = getFileSize(pageContent);
+            addRepositoryInfo(extension, size);
+            System.out.println(extension + " -> " + size);
         }
+
         return urls;
+    }
+
+    private void addRepositoryInfo(String extension, Double size) {
+        this.repositoryInfo.put(extension, size + (this.repositoryInfo.get(extension) == null ? 0D : this.repositoryInfo.get(extension)));
+    }
+
+    private Double getFileSize(String pageContent) {
+        int referenceIndex = pageContent.indexOf(FILE_SIZE_REFERENCE);
+        int initNameIndex = pageContent.indexOf("</span>", referenceIndex);
+        int endNameIndex = pageContent.indexOf("</div>", referenceIndex);
+        String result = pageContent.substring(initNameIndex + "</span>".length() , endNameIndex).trim();
+        return parseToBytes(result);
+    }
+
+    private Double parseToBytes(String result) {
+        String sizeSufix = result.substring(result.indexOf(" ")).trim();
+        Double value = Double.parseDouble(result.substring(0, result.indexOf(" ")));
+
+        switch (sizeSufix){
+            case "Bytes":
+                return value;
+            case "KB":
+                return value * 1024D;
+            case "MB":
+                return value * 1048576D;
+            default:
+                return 0D;
+        }
+    }
+
+    private String getFileExtension(String pageContent) {
+        int referenceIndex = pageContent.indexOf(FILE_NAME_REFERENCE);
+        int initNameIndex = pageContent.indexOf(">", referenceIndex);
+        int endNameIndex = pageContent.indexOf("<", referenceIndex);
+        String fileName = pageContent.substring(initNameIndex + ">".length(), endNameIndex);
+
+        if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
+            return fileName.substring(fileName.lastIndexOf(".")+1);
+
+        else return "NO_EXTENSION";
     }
 
     private static boolean isFile(String pageContent) {
         return pageContent.contains("file-info-divider");
-    }
-
-    private Map<String, Double> getFilesExtensionAndSizeFromPage(String pageContent){
-        return null;
     }
 
 }
