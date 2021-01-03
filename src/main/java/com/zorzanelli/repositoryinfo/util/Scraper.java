@@ -12,19 +12,9 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class Scraper {
+public class Scraper extends Constants{
 
     private final static Logger LOGGER = Logger.getLogger(Scraper.class.getName());
-
-    private static final String CLASS_ITEM_LIST = "js-navigation-open link-gray-dark";
-
-    private static final String FILE_NAME_REFERENCE = "final-path";
-
-    private static final String FILE_SIZE_REFERENCE = "text-mono f6 flex-auto pr-3 flex-order-2 flex-md-order-1 mt-2 mt-md-0";
-
-    private static final String FILE_LINE_REFERENCE = "text-mono f6 flex-auto pr-3 flex-order-2 flex-md-order-1 mt-2 mt-md-0";
-
-    private static final String GITHUB_BASE_URL = "https://github.com";
 
     private Map<String, FileInfo> repositoryInfo = new HashMap<>();
 
@@ -38,7 +28,7 @@ public class Scraper {
         List<String> urls = getItemsUrl(pageContent);
 
         for (String path: urls) {
-            System.out.println(path);
+            LOGGER.info(path);
             try{
                 getFilesSize(path);
             }catch (Exception ex){
@@ -65,10 +55,10 @@ public class Scraper {
 
     private List<String> getItemsUrl(String pageContent){
         List<String> urls = new ArrayList<>();
-        while(pageContent.contains(CLASS_ITEM_LIST)){
-            String url = getSubstringBasedOnReference(pageContent, CLASS_ITEM_LIST, "href=\"", "\">");
+        while(pageContent.contains(URL_REFERENCE)){
+            String url = getSubstringBasedOnReference(pageContent, URL_REFERENCE, "href=\"", "\">");
             urls.add(url);
-            pageContent = pageContent.replaceFirst(CLASS_ITEM_LIST, "");
+            pageContent = pageContent.replaceFirst(URL_REFERENCE, EMPTY_STRING);
         }
         
         if(isFile(pageContent)){
@@ -76,7 +66,7 @@ public class Scraper {
             Double size = getFileSize(pageContent);
             Long totalLines = isBinaryFile(pageContent) ? 0L : getFileLineCount(pageContent);
             addRepositoryInfo(extension, size, totalLines);
-            System.out.println(extension + " -> " + size + " | " + totalLines);
+            LOGGER.info(extension + ": " + size + " | " + totalLines);
         }
 
         return urls;
@@ -94,16 +84,16 @@ public class Scraper {
     }
 
     private Long getFileLineCount(String pageContent){
-        String result = getSubstringBasedOnReference(pageContent, FILE_LINE_REFERENCE, "\"", "line");
-        return Long.parseLong(result.replaceAll("\\D+",""));
+        String result = getSubstringBasedOnReference(pageContent, FILE_INFO_REFERENCE, "\"", "line");
+        return Long.parseLong(result.replaceAll(REGEX_NON_DIGIT,EMPTY_STRING));
     }
 
     private Double getFileSize(String pageContent) {
         String result;
         if(isBinaryFile(pageContent)){
-            result = getSubstringBasedOnReference(pageContent, FILE_SIZE_REFERENCE, ">", "<");
+            result = getSubstringBasedOnReference(pageContent, FILE_INFO_REFERENCE, ">", "<");
         }else{
-            result = getSubstringBasedOnReference(pageContent, FILE_SIZE_REFERENCE, "</span>", "</div>");
+            result = getSubstringBasedOnReference(pageContent, FILE_INFO_REFERENCE, "</span>", "</div>");
         }
         return parseToBytes(result);
     }
@@ -111,7 +101,7 @@ public class Scraper {
     private String getSubstringBasedOnReference(String pageContent, String reference, String start, String end){
         int referenceIndex = pageContent.indexOf(reference);
         if(referenceIndex == -1)
-            return "";
+            return EMPTY_STRING;
 
         int initNameIndex = pageContent.indexOf(start, referenceIndex);
         int endNameIndex = pageContent.indexOf(end, referenceIndex);
@@ -119,15 +109,15 @@ public class Scraper {
     }
 
     private Double parseToBytes(String result) {
-        String sizeSufix = result.substring(result.indexOf(" ")).trim();
-        Double value = Double.parseDouble(result.substring(0, result.indexOf(" ")));
+        String sizeSufix = result.substring(result.indexOf(WHITE_SPACE)).trim();
+        Double value = Double.parseDouble(result.substring(0, result.indexOf(WHITE_SPACE)));
 
         switch (sizeSufix){
-            case "Bytes":
+            case BYTES_SUFIX:
                 return value;
-            case "KB":
+            case KB_SUFIX:
                 return value * 1024D;
-            case "MB":
+            case MB_SUFIX:
                 return value * 1048576D;
             default:
                 return 0D;
@@ -137,18 +127,18 @@ public class Scraper {
     private String getFileExtension(String pageContent) {
         String fileName = getSubstringBasedOnReference(pageContent, FILE_NAME_REFERENCE, ">", "<");
 
-        if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
-            return fileName.substring(fileName.lastIndexOf(".")+1);
+        if(fileName.lastIndexOf(POINT) != -1 && fileName.lastIndexOf(POINT) != 0)
+            return fileName.substring(fileName.lastIndexOf(POINT)+1);
 
-        else return "NO_EXTENSION";
+        else return NO_EXTENSION;
     }
 
     private static boolean isFile(String pageContent) {
-        return pageContent.contains("text-mono f6 flex-auto pr-3 flex-order-2 flex-md-order-1 mt-2 mt-md-0");
+        return pageContent.contains(IS_FILE_REFERENCE);
     }
 
     private static boolean isBinaryFile(String pageContent){
-        return !pageContent.contains("file-info-divider");
+        return !pageContent.contains(IS_BINARY_REFERENCE);
     }
 
 }
