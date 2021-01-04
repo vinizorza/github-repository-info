@@ -98,7 +98,7 @@ public class Scraper extends Constants{
         return parseToBytes(result);
     }
 
-    private String getSubstringBasedOnReference(String pageContent, String reference, String start, String end){
+    public String getSubstringBasedOnReference(String pageContent, String reference, String start, String end){
         int referenceIndex = pageContent.indexOf(reference);
         if(referenceIndex == -1)
             return EMPTY_STRING;
