@@ -13,8 +13,7 @@ public class GithubInfoService {
     @Cacheable(cacheNames = "RepositoryInfo")
     public Map<String, FileInfo> getGithubRepositoryFilesSize(String repositoryUrl){
         Scraper scraper = new Scraper();
-        scraper.getFilesSize(repositoryUrl);
-        return scraper.getFilesSize(repositoryUrl);
+        return scraper.getFilesInfo(repositoryUrl);
     }
 
 }

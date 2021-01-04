@@ -16,9 +16,9 @@ public class Scraper extends Constants{
 
     private final static Logger LOGGER = Logger.getLogger(Scraper.class.getName());
 
-    private Map<String, FileInfo> repositoryInfo = new HashMap<>();
+    private final Map<String, FileInfo> repositoryInfo = new HashMap<>();
 
-    public Map<String, FileInfo> getFilesSize(String url){
+    public Map<String, FileInfo> getFilesInfo(String url){
 
         if(!url.contains(GITHUB_BASE_URL)){
             url = GITHUB_BASE_URL + url;
@@ -30,7 +30,7 @@ public class Scraper extends Constants{
         for (String path: urls) {
             LOGGER.info(path);
             try{
-                getFilesSize(path);
+                getFilesInfo(path);
             }catch (Exception ex){
                 LOGGER.info("Unknown page pattern: " + path);
             }
