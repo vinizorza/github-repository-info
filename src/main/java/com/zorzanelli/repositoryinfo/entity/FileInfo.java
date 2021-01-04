@@ -1,6 +1,8 @@
 package com.zorzanelli.repositoryinfo.entity;
 
-public class FileInfo {
+import java.io.Serializable;
+
+public class FileInfo implements Serializable {
 
     private Long totalLines = 0L;
     private Double size = 0D;
